@@ -63,6 +63,12 @@ describe("parseGitHubRepositoryNameWithOwnerFromRemoteUrl", () => {
 });
 
 describe("isTemporaryWorktreeBranch", () => {
+  it("supports a custom worktree branch prefix", () => {
+    expect(buildTemporaryWorktreeBranchName(() => "deadbeef", "guifrrs")).toBe("guifrrs/deadbeef");
+    expect(isTemporaryWorktreeBranch("guifrrs/deadbeef", "guifrrs")).toBe(true);
+    expect(isTemporaryWorktreeBranch("other/deadbeef", "guifrrs")).toBe(false);
+  });
+
   it("matches the generated temporary worktree refName format", () => {
     expect(
       isTemporaryWorktreeBranch(

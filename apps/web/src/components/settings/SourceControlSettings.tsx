@@ -34,6 +34,7 @@ import {
   EmptyTitle,
 } from "../ui/empty";
 import { Skeleton } from "../ui/skeleton";
+import { Input } from "../ui/input";
 import {
   NumberField,
   NumberFieldDecrement,
@@ -410,6 +411,38 @@ function GitFetchIntervalSettings() {
   );
 }
 
+function WorktreeBranchPrefixSettings() {
+  const settings = usePrimarySettings();
+  const updateSettings = useUpdatePrimarySettings();
+
+  return (
+    <SettingsSection title="Branches">
+      <div className="flex flex-col gap-3 rounded-xl px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
+        <div className="min-w-0 space-y-1">
+          <p className="text-xs font-medium text-foreground">Worktree branch prefix</p>
+          <p className="max-w-2xl text-xs leading-relaxed text-muted-foreground">
+            Prefix used for branches created for new worktree tasks.
+          </p>
+        </div>
+        <Input
+          key={settings.worktreeBranchPrefix}
+          className="w-full sm:w-56"
+          aria-label="Worktree branch prefix"
+          defaultValue={settings.worktreeBranchPrefix}
+          onBlur={(event) => {
+            const value = event.currentTarget.value.trim() || "t3code";
+            event.currentTarget.value = value;
+            if (value !== settings.worktreeBranchPrefix) {
+              updateSettings({ worktreeBranchPrefix: value });
+            }
+          }}
+          placeholder="t3code"
+        />
+      </div>
+    </SettingsSection>
+  );
+}
+
 function SourceControlSectionSkeleton({
   title,
   headerAction,
@@ -580,7 +613,12 @@ export function SourceControlSettingsPanel() {
         />
       )}
 
-      {isPrimaryEnvironment ? <SourceControlWritingSettingsSection /> : null}
+      {isPrimaryEnvironment ? (
+        <>
+          <WorktreeBranchPrefixSettings />
+          <SourceControlWritingSettingsSection />
+        </>
+      ) : null}
     </SettingsPageContainer>
   );
 }

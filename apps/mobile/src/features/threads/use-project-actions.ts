@@ -19,6 +19,8 @@ import { makeTurnCommandMetadata, type TurnCommandMetadata } from "../../lib/com
 import { buildProjectThreadStartTurnInput } from "../../lib/projectThreadStartTurn";
 import { randomHex } from "../../lib/uuid";
 import { useAtomCommand } from "../../state/use-atom-command";
+import { appAtomRegistry } from "../../state/atom-registry";
+import { serverEnvironment } from "../../state/server";
 import { setPendingConnectionError } from "../../state/use-remote-environment-registry";
 import { validateProjectThreadCreation } from "./projectThreadCreationValidation";
 
@@ -74,7 +76,11 @@ export function useCreateProjectThread() {
           branch: input.branch,
           worktreePath: input.worktreePath,
           startFromOrigin: input.startFromOrigin ?? false,
-          worktreeBranchName: buildTemporaryWorktreeBranchName(randomHex),
+          worktreeBranchName: buildTemporaryWorktreeBranchName(
+            randomHex,
+            appAtomRegistry.get(serverEnvironment.settingsValueAtom(input.project.environmentId))
+              ?.worktreeBranchPrefix,
+          ),
         }),
       });
       if (AsyncResult.isFailure(result)) {

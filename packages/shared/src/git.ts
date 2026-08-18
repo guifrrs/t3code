@@ -94,6 +94,7 @@ export function deriveLocalBranchNameFromRemoteRef(branchName: string): string {
 
 export function buildTemporaryWorktreeBranchName(
   randomHex: (byteLength: number) => string,
+  prefix = WORKTREE_BRANCH_PREFIX,
 ): string {
   // Normalize to exactly 8 lowercase hex chars so a UUID-shaped callback
   // still produces the canonical temporary branch form.
@@ -101,11 +102,23 @@ export function buildTemporaryWorktreeBranchName(
     .toLowerCase()
     .replace(/[^0-9a-f]/g, "")
     .slice(0, 8);
-  return `${WORKTREE_BRANCH_PREFIX}/${token}`;
+  return `${sanitizeBranchPrefix(prefix)}/${token}`;
 }
 
-export function isTemporaryWorktreeBranch(refName: string): boolean {
-  return TEMP_WORKTREE_BRANCH_PATTERN.test(refName.trim().toLowerCase());
+export function sanitizeBranchPrefix(raw: string): string {
+  return sanitizeBranchFragment(raw).replace(/\/+$/g, "") || WORKTREE_BRANCH_PREFIX;
+}
+
+export function isTemporaryWorktreeBranch(
+  refName: string,
+  prefix = WORKTREE_BRANCH_PREFIX,
+): boolean {
+  const normalizedPrefix = sanitizeBranchPrefix(prefix).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const configuredPattern = new RegExp(
+    `^${normalizedPrefix}\\/(?:[0-9a-f]{8}|[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$`,
+  );
+  const normalized = refName.trim().toLowerCase();
+  return TEMP_WORKTREE_BRANCH_PATTERN.test(normalized) || configuredPattern.test(normalized);
 }
 
 /**

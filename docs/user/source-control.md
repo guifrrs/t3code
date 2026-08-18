@@ -63,6 +63,10 @@ The **Source Control settings** page shows you exactly what's connected:
 
 Run a quick **Rescan** after setting up a new machine or changing credentials.
 
+You can also choose the prefix used for branches created by new worktree tasks under
+**Settings → Source Control → Branches**. Existing branches are not renamed when this setting
+changes.
+
 ## Getting Started
 
 ### For GitHub (Recommended for most users)
