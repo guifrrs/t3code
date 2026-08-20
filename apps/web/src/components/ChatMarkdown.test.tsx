@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { orderedListGutterStyle } from "./ChatMarkdown";
+import { isMermaidFenceLanguage, orderedListGutterStyle } from "./ChatMarkdown";
+
+describe("Mermaid code fences", () => {
+  it("routes Mermaid fences to the diagram renderer", () => {
+    expect(isMermaidFenceLanguage("mermaid")).toBe(true);
+    expect(isMermaidFenceLanguage("Mermaid")).toBe(true);
+  });
+
+  it("leaves ordinary code fences on the syntax-highlighting path", () => {
+    expect(isMermaidFenceLanguage("typescript")).toBe(false);
+  });
+});
 
 describe("orderedListGutterStyle", () => {
   it("leaves the default gutter alone for single-digit lists", () => {

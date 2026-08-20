@@ -31,6 +31,7 @@ import React, {
   useCallback,
   memo,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -253,6 +254,67 @@ function extractFenceLanguage(className: string | undefined): string {
   const raw = match?.[1] ?? "text";
   // Shiki doesn't bundle a gitignore grammar; ini is a close match (#685)
   return raw === "gitignore" ? "ini" : raw;
+}
+
+export function isMermaidFenceLanguage(language: string): boolean {
+  return language.toLowerCase() === "mermaid";
+}
+
+let mermaidRenderSequence = 0;
+
+function MermaidDiagram({ code, theme }: { code: string; theme: "light" | "dark" }) {
+  const reactId = useId().replaceAll(":", "");
+  const [svg, setSvg] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const render = async () => {
+      try {
+        const { default: mermaid } = await import("mermaid");
+        mermaid.initialize({
+          startOnLoad: false,
+          suppressErrorRendering: true,
+          securityLevel: "strict",
+          theme: theme === "dark" ? "dark" : "default",
+        });
+        mermaidRenderSequence += 1;
+        const result = await mermaid.render(
+          `chat-mermaid-${reactId}-${mermaidRenderSequence}`,
+          code,
+        );
+        if (!cancelled) {
+          setSvg(result.svg);
+          setFailed(false);
+        }
+      } catch (cause) {
+        if (!cancelled) {
+          setFailed(true);
+          reportMarkdownActionFailure({ operation: "render-mermaid", language: "mermaid" }, cause);
+        }
+      }
+    };
+
+    void render();
+    return () => {
+      cancelled = true;
+    };
+  }, [code, reactId, theme]);
+
+  if (svg !== null) {
+    return (
+      <div
+        className="chat-markdown-mermaid flex min-w-0 justify-center overflow-auto p-3 [&_svg]:h-auto [&_svg]:max-w-full"
+        dangerouslySetInnerHTML={{ __html: svg }}
+      />
+    );
+  }
+
+  return (
+    <pre className="overflow-auto p-3 text-xs">
+      <code>{failed ? code : "Rendering diagram…"}</code>
+    </pre>
+  );
 }
 
 const FENCE_TITLE_ATTR_REGEX = /(?:^|\s)(?:title|file(?:name)?)=(?:"([^"]+)"|'([^']+)'|(\S+))/i;
@@ -1743,6 +1805,19 @@ function ChatMarkdown({
 
         const language = extractFenceLanguage(codeBlock.className);
         const fenceTitle = extractFenceTitle(extractPreCodeMeta(node));
+        if (isMermaidFenceLanguage(language)) {
+          return (
+            <div className="chat-markdown-codeblock my-[0.65rem] overflow-hidden rounded-[var(--radius)] border border-border/70 bg-secondary dark:border-transparent dark:bg-input/32">
+              <RenderErrorBoundary fallback={<pre {...props}>{children}</pre>}>
+                <MermaidDiagram
+                  key={`${resolvedTheme}:${codeBlock.code}`}
+                  code={codeBlock.code}
+                  theme={resolvedTheme}
+                />
+              </RenderErrorBoundary>
+            </div>
+          );
+        }
         return (
           <MarkdownCodeBlock
             code={codeBlock.code}
